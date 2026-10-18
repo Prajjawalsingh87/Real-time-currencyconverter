@@ -1,4 +1,5 @@
-import React, { useId } from 'react'
+import { useId } from 'react'
+import CurrencySelect from './CurrencySelect'
 
 function InputBox({
   label,
@@ -6,49 +7,52 @@ function InputBox({
   onAmountChange,
   onCurrencyChange,
   currencyOptions = [],
+  currencyNames = {},
   selectCurrency = "usd",
   amountDisable = false,
-  currencyDisable = false,
+  loading = false,
   className = "",
 }) {
   const amountInputId = useId()
 
   return (
-    <div className={`bg-white p-5 rounded-xl text-base flex items-center gap-4 ${className}`}>
-      
-      {/* Amount Section */}
-      <div className="w-2/3">
-        <label htmlFor={amountInputId} className="text-black/50 mb-2 block font-medium">
+    <div
+      className={`rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition focus-within:border-indigo-400/50 focus-within:bg-white/[0.06] ${className}`}
+    >
+      <div className="mb-3 flex items-center justify-between">
+        <label htmlFor={amountInputId} className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           {label}
         </label>
-        <input
-          id={amountInputId}
-          className="outline-none w-full bg-transparent py-2 text-lg border-b border-gray-300 focus:border-teal-500 transition"
-          type="number"
-          placeholder="Amount"
-          disabled={amountDisable}
-          value={amount}
-          onChange={(e) => onAmountChange && onAmountChange(Number(e.target.value))}
+        <span className="truncate pl-3 text-xs text-slate-500">{currencyNames[selectCurrency] || ""}</span>
+      </div>
+
+      <div className="flex items-center gap-4">
+        {loading ? (
+          <div className="h-10 flex-1 animate-pulse rounded-lg bg-white/10" />
+        ) : (
+          <input
+            id={amountInputId}
+            className="min-w-0 flex-1 bg-transparent text-3xl font-semibold tracking-tight text-white outline-none placeholder-slate-600 disabled:cursor-default sm:text-4xl"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="0"
+            readOnly={amountDisable}
+            value={amount}
+            onChange={(e) => {
+              const v = e.target.value.replace(/,/g, "")
+              if (/^\d*\.?\d*$/.test(v)) onAmountChange?.(v)
+            }}
+          />
+        )}
+        <CurrencySelect
+          label={`${label} currency`}
+          value={selectCurrency}
+          onChange={onCurrencyChange}
+          options={currencyOptions}
+          names={currencyNames}
         />
       </div>
-
-      {/* Currency Section */}
-      <div className="w-1/3 text-right">
-        <p className="text-black/50 mb-2 font-medium">Currency Type</p>
-        <select
-          className="rounded-lg px-4 py-2 bg-gray-100 cursor-pointer outline-none text-lg w-full border border-gray-300 focus:ring-2 focus:ring-teal-500"
-          value={selectCurrency}
-          onChange={(e) => onCurrencyChange && onCurrencyChange(e.target.value)}
-          disabled={currencyDisable}
-        >
-          {currencyOptions.map((currency) => (
-            <option key={currency} value={currency}>
-              {currency.toUpperCase()}
-            </option>
-          ))}
-        </select>
-      </div>
-
     </div>
   )
 }
