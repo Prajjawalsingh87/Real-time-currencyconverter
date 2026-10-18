@@ -1,87 +1,226 @@
-import { useState } from 'react'
-import { InputBox } from './components'
+import { useMemo, useState } from 'react'
+import { InputBox, CurrencyBadge } from './components'
 import useCurrencyInfo from './hooks/UseCurrencyInfo'
+import useCurrencyNames from './hooks/useCurrencyNames'
+import { POPULAR, formatAmount, formatDate } from './utils/currency'
+
+const QUICK_AMOUNTS = ["1", "10", "100", "1000", "10000"]
 
 function App() {
-
-  const [amount, setAmount] = useState(0)
+  const [amount, setAmount] = useState("100")
   const [from, setFrom] = useState("usd")
   const [to, setTo] = useState("inr")
-  const [convertedAmount, setConvertedAmount] = useState(0)
+  const [spin, setSpin] = useState(0)
+  const [copied, setCopied] = useState(false)
 
-  const currencyInfo = useCurrencyInfo(from)
-  const options = Object.keys(currencyInfo)
+  const { rates, date, loading, error } = useCurrencyInfo(from)
+  const names = useCurrencyNames()
+  const options = useMemo(() => Object.keys(rates), [rates])
 
+  const rate = rates[to]
+  const value = Number(amount) || 0
+  const converted = rate ? value * rate : 0
+  const convertedText = rate ? formatAmount(converted) : ""
+
+  // Live conversion, so swapping just flips the pair; the amount stays what the user typed.
   const swap = () => {
     setFrom(to)
     setTo(from)
-    setConvertedAmount(amount)
-    setAmount(convertedAmount)
+    setSpin((s) => s + 180)
   }
 
-  const convert = () => {
-    setConvertedAmount(amount * currencyInfo[to])
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${convertedText} ${to.toUpperCase()}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* clipboard blocked: nothing to do */
+    }
   }
+
+  const popular = POPULAR.filter((c) => c !== from && rates[c])
 
   return (
-    <div
-      className="w-full h-screen flex justify-center items-center bg-cover bg-no-repeat bg-slate-700"
-      style={{
-        backgroundImage: `url('https://images.pexels.com/photos/3532540/pexels-photo-3532540.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')`,
-      }}
-    >
-        
-      <div className="w-full px-4">
-        <div className="w-full max-w-4xl mx-auto border border-gray-200 rounded-2xl p-10 backdrop-blur-md bg-teal-500/30 shadow-2xl">
-          
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              convert()
-            }}
-          >
-            <div className="w-full mb-4">
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 font-sans text-slate-200 antialiased">
+      {/* soft background glow */}
+      <div className="pointer-events-none absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-indigo-600/25 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-48 -right-32 h-[34rem] w-[34rem] rounded-full bg-emerald-500/15 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:24px_24px]" />
+
+      <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
+        {/* header */}
+        <header className="flex items-center justify-between py-6">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-400 shadow-lg shadow-indigo-500/30">
+              <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M7 7h11l-3-3M17 17H6l3 3" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-lg font-bold leading-tight text-white">FX Live</p>
+              <p className="text-xs text-slate-500">Real-time currency converter</p>
+            </div>
+          </div>
+          <span className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            {date ? `Rates of ${formatDate(date)}` : "Live rates"}
+          </span>
+        </header>
+
+        <main className="grid flex-1 grid-cols-1 items-start gap-6 pb-10 pt-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:pt-10">
+          {/* converter */}
+          <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Convert <span className="bg-gradient-to-r from-indigo-300 to-emerald-300 bg-clip-text text-transparent">any currency</span>, instantly
+            </h1>
+            <p className="mt-1 text-sm text-slate-400">200+ currencies, including crypto and metals. Results update as you type.</p>
+
+            <div className="mt-6">
               <InputBox
-                label="From"
+                label="You send"
                 amount={amount}
+                onAmountChange={setAmount}
                 currencyOptions={options}
-                onCurrencyChange={(currency) => setFrom(currency)}
+                currencyNames={names}
+                onCurrencyChange={setFrom}
                 selectCurrency={from}
-                onAmountChange={(amount) => setAmount(amount)}
               />
-            </div>
 
-            <div className="relative w-full h-1 my-6">
-              <button
-                type="button"
-                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-white rounded-lg bg-red-700 text-white px-4 py-2 text-lg font-semibold shadow-lg hover:bg-red-800 transition"
-                onClick={swap}
-              >
-                SWAP
-              </button>
-            </div>
+              <div className="relative z-10 -my-3 flex justify-center">
+                <button
+                  type="button"
+                  onClick={swap}
+                  aria-label="Swap currencies"
+                  className="grid h-12 w-12 place-items-center rounded-full border-4 border-slate-900 bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-lg shadow-indigo-500/30 transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                >
+                  <svg
+                    className="h-5 w-5 transition-transform duration-500"
+                    style={{ transform: `rotate(${spin}deg)` }}
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3" />
+                  </svg>
+                </button>
+              </div>
 
-            <div className="w-full mt-4 mb-6">
               <InputBox
-                label="To"
-                amount={convertedAmount}
+                label="They get"
+                amount={convertedText}
                 currencyOptions={options}
-                onCurrencyChange={(currency) => setTo(currency)}
+                currencyNames={names}
+                onCurrencyChange={setTo}
                 selectCurrency={to}
                 amountDisable
+                loading={loading && !rate}
               />
             </div>
 
-            <button
-              type="submit"
-              className="w-full bg-red-700 text-white px-6 py-4 text-lg rounded-xl font-semibold shadow-lg hover:bg-red-800 transition"
-            >
-              Convert {from.toUpperCase()} to {to.toUpperCase()}
-            </button>
+            {/* quick amounts */}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {QUICK_AMOUNTS.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => setAmount(q)}
+                  className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
+                    amount === q
+                      ? "border-indigo-400/60 bg-indigo-500/20 text-indigo-200"
+                      : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/10"
+                  }`}
+                >
+                  {formatAmount(Number(q))}
+                </button>
+              ))}
+            </div>
 
-          </form>
+            {/* result summary */}
+            <div className="mt-6 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-emerald-500/10 p-5">
+              {error ? (
+                <p className="text-sm text-rose-300">{error}</p>
+              ) : (
+                <div className="flex flex-wrap items-end justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm text-slate-400">
+                      {formatAmount(value)} {from.toUpperCase()} =
+                    </p>
+                    <p className="mt-1 break-all text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                      {rate ? convertedText : "—"} <span className="text-xl font-semibold text-emerald-300">{to.toUpperCase()}</span>
+                    </p>
+                    {rate && (
+                      <p className="mt-2 text-sm text-slate-400">
+                        1 {from.toUpperCase()} = {formatAmount(rate)} {to.toUpperCase()}
+                        <span className="mx-2 text-slate-600">·</span>
+                        1 {to.toUpperCase()} = {formatAmount(1 / rate)} {from.toUpperCase()}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={copy}
+                    disabled={!rate}
+                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10 disabled:opacity-40"
+                  >
+                    {copied ? (
+                      <>
+                        <svg className="h-4 w-4 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 13l4 4L19 7" /></svg>
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 012-2h10" /></svg>
+                        Copy result
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
 
-        </div>
+          {/* popular rates */}
+          <aside className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-6">
+            <div className="mb-4 flex items-baseline justify-between">
+              <h2 className="font-semibold text-white">Popular rates</h2>
+              <span className="text-xs text-slate-500">for {formatAmount(value)} {from.toUpperCase()}</span>
+            </div>
+            <ul className="space-y-1">
+              {loading && popular.length === 0
+                ? Array.from({ length: 8 }, (_, i) => <li key={i} className="h-12 animate-pulse rounded-xl bg-white/5" />)
+                : popular.map((c) => (
+                    <li key={c}>
+                      <button
+                        type="button"
+                        onClick={() => setTo(c)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5 ${
+                          c === to ? "bg-white/5 ring-1 ring-indigo-400/40" : ""
+                        }`}
+                      >
+                        <CurrencyBadge code={c} size="sm" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold text-white">{c.toUpperCase()}</span>
+                          <span className="block truncate text-xs text-slate-500">{names[c] || ""}</span>
+                        </span>
+                        <span className="text-right text-sm font-medium tabular-nums text-slate-200">
+                          {formatAmount(value * rates[c])}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+            </ul>
+          </aside>
+        </main>
+
+        <footer className="pb-6 text-center text-xs text-slate-600">
+          Rates from the free{" "}
+          <a className="text-slate-400 underline-offset-2 hover:underline" href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noreferrer">
+            Exchange API
+          </a>
+          , updated daily. For reference only.
+        </footer>
       </div>
     </div>
   )
