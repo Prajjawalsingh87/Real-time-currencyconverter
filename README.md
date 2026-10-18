@@ -1,30 +1,49 @@
-# Currency Converter <br>
-A React-based currency converter application that allows users to input an amount in one currency and convert it to another using real-time exchange rates. The application leverages modern React hooks, reusable components, and Tailwind CSS for styling.
-# Features
-1.<b>Real-time Currency Conversion:</b> Get live exchange rates and convert between currencies dynamically.<br>
-2.<b>Swap Currencies:</b>  Easily swap between source and target currencies with a single click.<br>
-3.<b>Responsive Design:</b>  The app is fully responsive, built with Tailwind CSS for a modern UI experience.<br>
-4.<b>Reusable Components:</b>  Modular InputBox component used for both currency inputs.<br>
-5.<b>Custom Hooks: </b>  Fetch real-time exchange rates with a reusable custom hook (useCurrencyInfo).<br>
-# demo 
-<img src='https://images.pexels.com/photos/3532540/pexels-photo-3532540.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'/>
-# Installation
- <b> git clone <b> https://github.com/yourusername/currency-converter.git
-  cd currency-converter</b>
-# Project Structure
- currency-converter/
-│
-├── public/
-├── src/
-│   ├── components/
-│   │   └── InputBox.js          # Reusable input component
-│   ├── hooks/
-│   │   └── useCurrencyInfo.js   # Custom hook to fetch currency rates
-│   ├── App.js                   # Main app component
-│   └── index.js                 # Entry point
-├── package.json
-└── README.md
-![pexels-photo-3532540](https://github.com/user-attachments/assets/2c87e6f5-fa6d-4ea5-9a1d-2cf57155148f)
+# 💱 FX Live — Real-time Currency Converter
 
-##Link on vercel
-https://real-time-currencyconverter.vercel.app/
+Convert between **200+ currencies, crypto and metals** with live exchange rates. Built with React, Vite and Tailwind CSS.
+
+**🔗 Live:** https://real-time-currencyconverter.vercel.app
+
+## ✨ Features
+
+- **Converts as you type**: no Convert button needed
+- **Searchable currency picker**: flags and full names, search by code or name ("yen", "rupee"), popular currencies first
+- **Swap** the two currencies with one click
+- **Quick amounts**: 1 / 10 / 100 / 1,000 / 10,000
+- **Rate in both directions** (e.g. `1 USD = 95.03 INR · 1 INR = 0.01052 USD`) plus the date of the rates
+- **Popular rates panel**: your amount in 11 common currencies; click one to convert to it
+- **Copy result** to the clipboard
+- Loading and error states, and a backup rate source if the main one is down
+- Responsive dark UI for phones and desktops
+
+## 🛠 Tech Stack
+
+React 18 · Vite 5 · Tailwind CSS 3 · [Exchange API](https://github.com/fawazahmed0/exchange-api) (free, updated daily)
+
+## ▶️ Run locally
+
+```bash
+git clone https://github.com/Prajjawalsingh87/Real-time-currencyconverter.git
+cd Real-time-currencyconverter
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # production build in dist/
+```
+
+## 📂 Project structure
+
+```
+src/
+├── App.jsx                     # page layout, conversion logic
+├── components/
+│   ├── InputBox.jsx            # amount + currency field
+│   └── CurrencySelect.jsx      # searchable currency picker, flag badges
+├── hooks/
+│   ├── UseCurrencyInfo.js      # rates for a base currency (with fallback source)
+│   └── useCurrencyNames.js     # full currency names
+└── utils/currency.js           # flags, number and date formatting
+```
+
+## 🚀 Deployment
+
+Deployed on **Vercel**; every push to `main` deploys to production.
