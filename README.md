@@ -13,12 +13,15 @@ Convert between **200+ currencies, crypto and metals** with live exchange rates.
 - **Rate in both directions** (e.g. `1 USD = 95.03 INR · 1 INR = 0.01052 USD`) plus the date of the rates
 - **Popular rates panel**: your amount in 11 common currencies; click one to convert to it
 - **Copy result** to the clipboard
+- **Rate history chart** for the selected pair: 7 / 30 / 90 days with low, high and change %, drawn as a lightweight inline SVG (no chart library), with a screen-reader summary and data table
+- **Global currency search** (`Ctrl+K` / `⌘K`): typo-tolerant search across codes, names and countries ("brazl", "ivory coast", "swiss"), powered by [MiniSearch](https://github.com/lucaong/minisearch). `Enter` converts to the currency, `Alt+Enter` converts from it; `?q=yen` opens the search pre-filled
+- **Rate alerts**: "tell me when USD → INR goes above 95", saved on this device and checked against the latest rates whenever the app opens
 - Loading and error states, and a backup rate source if the main one is down
 - Responsive light UI for phones and desktops
 
 ## 🛠 Tech Stack
 
-React 18 · Vite 5 · Tailwind CSS 3 · [Exchange API](https://github.com/fawazahmed0/exchange-api) (free, updated daily)
+React 18 · Vite 5 · Tailwind CSS 3 · MiniSearch · [Exchange API](https://github.com/fawazahmed0/exchange-api) (free, updated daily)
 
 ## ▶️ Run locally
 
@@ -37,12 +40,26 @@ src/
 ├── App.jsx                     # page layout, conversion logic
 ├── components/
 │   ├── InputBox.jsx            # amount + currency field
-│   └── CurrencySelect.jsx      # searchable currency picker, flag badges
+│   ├── CurrencySelect.jsx      # searchable currency picker, flag badges
+│   ├── RateHistory.jsx         # 7/30/90-day SVG line chart
+│   ├── CommandPalette.jsx      # Ctrl+K MiniSearch currency search
+│   └── RateAlerts.jsx          # local above/below rate alerts
 ├── hooks/
 │   ├── UseCurrencyInfo.js      # rates for a base currency (with fallback source)
+│   ├── useRateHistory.js       # sampled dated snapshots, sessionStorage cache
 │   └── useCurrencyNames.js     # full currency names
-└── utils/currency.js           # flags, number and date formatting
+└── utils/
+    ├── currency.js             # flags, number and date formatting
+    └── countries.js            # countries/aliases per currency for search
 ```
+
+## 📈 How the rate history works
+
+The Exchange API publishes a dated snapshot per day (`@fawazahmed0/currency-api@YYYY-MM-DD`, with
+`YYYY-MM-DD.currency-api.pages.dev` as fallback). To keep requests low the chart samples points:
+daily for 7 days (7 requests), every 3 days for 30 days (10) and weekly for 90 days (13), plus today's
+live rate. Each day's rate is cached in `sessionStorage`; when a snapshot is missing the app tries up
+to two earlier days and otherwise leaves the gap out of the line.
 
 ## 🚀 Deployment
 

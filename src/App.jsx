@@ -1,7 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { InputBox, CurrencyBadge } from './components'
 import useCurrencyInfo from './hooks/UseCurrencyInfo'
 import useCurrencyNames from './hooks/useCurrencyNames'
+import RateHistory from './components/RateHistory'
+import RateAlerts from './components/RateAlerts'
+import CommandPalette from './components/CommandPalette'
 import { POPULAR, formatAmount, formatDate } from './utils/currency'
 
 const QUICK_AMOUNTS = ["1", "10", "100", "1000", "10000"]
@@ -16,6 +19,22 @@ function App() {
     try { const saved = JSON.parse(localStorage.getItem("fx:pairs")); return Array.isArray(saved) ? saved.filter(p => p && /^[a-z0-9]{2,12}$/.test(p.from) && /^[a-z0-9]{2,12}$/.test(p.to)).slice(0, 6) : [] } catch { return [] }
   })
   const [pairMessage, setPairMessage] = useState("")
+  // ?q=yen opens the currency search pre-filled (shareable search links)
+  const [initialQuery] = useState(() => {
+    try { return (new URLSearchParams(window.location.search).get("q") || "").slice(0, 60) } catch { return "" }
+  })
+  const [paletteOpen, setPaletteOpen] = useState(() => initialQuery !== "")
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
   const savePair = () => {
     const next = [{ from, to }, ...savedPairs.filter(p => p.from !== from || p.to !== to)].slice(0, 6)
     setSavedPairs(next)
@@ -72,16 +91,29 @@ function App() {
               <p className="text-xs text-slate-500">Daily exchange rates</p>
             </div>
           </div>
-          <span className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-700">
+          <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            aria-keyshortcuts="Control+K Meta+K"
+            className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-700"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+            <span className="hidden sm:inline">Search currencies</span>
+            <kbd className="rounded border border-slate-200 bg-slate-50 px-1 font-sans text-[10px]">Ctrl K</kbd>
+          </button>
+          <span className="hidden items-center gap-2 rounded-full border sm:flex border-emerald-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-700">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
             </span>
             {date ? `Rates of ${formatDate(date)}` : "Loading rates"}
           </span>
+          </div>
         </header>
 
         <main className="grid flex-1 grid-cols-1 items-start gap-6 pb-10 pt-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:pt-10">
+          <div className="flex min-w-0 flex-col gap-6">
           {/* converter */}
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-200/60 backdrop-blur-xl sm:p-8">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
@@ -196,6 +228,12 @@ function App() {
             </div>
           </section>
 
+          {rate && date ? (
+            <RateHistory from={from} to={to} date={date} rate={rate} />
+          ) : null}
+          <RateAlerts from={from} to={to} rate={rate} />
+          </div>
+
           {/* popular rates */}
           <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-200/60 backdrop-blur-xl sm:p-6">
             <div className="mb-4 flex items-baseline justify-between">
@@ -228,6 +266,16 @@ function App() {
             </ul>
           </aside>
         </main>
+
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          codes={options}
+          names={names}
+          initialQuery={initialQuery}
+          onPickTo={(c) => { if (c === from) setFrom(to); setTo(c) }}
+          onPickFrom={(c) => { if (c === to) setTo(from); setFrom(c) }}
+        />
 
         <footer className="pb-6 text-center text-xs text-slate-600">
           Rates from the free{" "}
