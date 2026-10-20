@@ -196,7 +196,7 @@ function App() {
             {/* result summary */}
             <div className="mt-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-500/10 to-emerald-500/10 p-5">
               {error ? (
-                <p className="text-sm text-rose-700">{online ? error : "You're offline and no saved rates are available for this currency yet."}</p>
+                <p className="text-sm text-rose-700" role="alert">{online ? error : "You're offline and no saved rates are available for this currency yet."}</p>
               ) : (
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div className="min-w-0">
