@@ -23,14 +23,14 @@ export async function fetchApi(path) {
 
 // Rates for one base currency: { rates: { inr: 88.7, ... }, date: "2026-10-18", loading, error }
 function useCurrencyInfo(currency) {
-  const [state, setState] = useState({ rates: {}, date: null, loading: true, error: null })
+  const [state, setState] = useState({ base: currency, rates: {}, date: null, loading: true, error: null })
 
   useEffect(() => {
     let cancelled = false
-    setState((s) => ({ ...s, loading: true, error: null }))
+    setState({ base: currency, rates: {}, date: null, loading: true, error: null })
     fetchApi(`currencies/${currency}.json`)
       .then((res) => {
-        if (!cancelled) setState({ rates: res[currency] || {}, date: res.date, loading: false, error: null })
+        if (!cancelled) setState({ base: currency, rates: res[currency] || {}, date: res.date, loading: false, error: null })
       })
       .catch(() => {
         if (!cancelled) setState((s) => ({ ...s, loading: false, error: "Couldn't load exchange rates. Check your connection." }))
@@ -40,7 +40,7 @@ function useCurrencyInfo(currency) {
     }
   }, [currency])
 
-  return state
+  return state.base === currency ? state : { rates: {}, date: null, loading: true, error: null }
 }
 
 export default useCurrencyInfo

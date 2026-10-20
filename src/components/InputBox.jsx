@@ -17,10 +17,10 @@ function InputBox({
 
   return (
     <div
-      className={`rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition focus-within:border-indigo-400/50 focus-within:bg-white/[0.06] ${className}`}
+      className={`rounded-2xl border border-slate-200 bg-white/[0.04] p-5 transition focus-within:border-indigo-400/50 focus-within:bg-white/[0.06] ${className}`}
     >
       <div className="mb-3 flex items-center justify-between">
-        <label htmlFor={amountInputId} className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <label htmlFor={amountInputId} className="text-xs font-semibold uppercase tracking-wider text-slate-600">
           {label}
         </label>
         <span className="truncate pl-3 text-xs text-slate-500">{currencyNames[selectCurrency] || ""}</span>
@@ -28,11 +28,11 @@ function InputBox({
 
       <div className="flex items-center gap-4">
         {loading ? (
-          <div className="h-10 flex-1 animate-pulse rounded-lg bg-white/10" />
+          <div className="h-10 flex-1 animate-pulse rounded-lg bg-indigo-50" />
         ) : (
           <input
             id={amountInputId}
-            className="min-w-0 flex-1 bg-transparent text-3xl font-semibold tracking-tight text-white outline-none placeholder-slate-600 disabled:cursor-default sm:text-4xl"
+            className="min-w-0 flex-1 bg-transparent text-3xl font-semibold tracking-tight text-slate-900 outline-none placeholder-slate-600 disabled:cursor-default sm:text-4xl"
             type="text"
             inputMode="decimal"
             autoComplete="off"
