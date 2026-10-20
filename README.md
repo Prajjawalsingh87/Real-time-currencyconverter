@@ -18,6 +18,8 @@ Convert between **200+ currencies, crypto and metals** with live exchange rates.
 - **Rate alerts**: "tell me when USD → INR goes above 95", saved on this device and checked against the latest rates whenever the app opens
 - Loading and error states, and a backup rate source if the main one is down
 - Responsive light UI for phones and desktops
+- **Installable & offline**: install it to your home screen or desktop with the **Install app** button; it keeps working without a connection, using the last saved rates
+- **Light / dark theme**: follows your system by default; the toggle in the top bar remembers your choice
 
 ## 🛠 Tech Stack
 
@@ -60,6 +62,21 @@ The Exchange API publishes a dated snapshot per day (`@fawazahmed0/currency-api@
 daily for 7 days (7 requests), every 3 days for 30 days (10) and weekly for 90 days (13), plus today's
 live rate. Each day's rate is cached in `sessionStorage`; when a snapshot is missing the app tries up
 to two earlier days and otherwise leaves the gap out of the line.
+
+## 📲 Install & offline (PWA)
+
+`vite-plugin-pwa` generates `manifest.webmanifest` and a Workbox service worker (`sw.js`) at build time.
+The service worker precaches the built app so it opens offline, and updates itself automatically when a
+new version is deployed. Exchange rates use a **NetworkFirst** runtime cache with a 3-second timeout: when you are offline (or the network is slow) the app shows the last saved rates with an "Offline — showing saved rates" note, and past-date rates for the history chart are cached first since they never change. The **Install app** button only appears when the browser offers installation
+(the `beforeinstallprompt` event). Icons (`public/pwa-*.png`, maskable and Apple touch icons) are rendered
+from the app's SVG logo. `vercel.json` serves `sw.js`, `registerSW.js` and the manifest with
+`Cache-Control: no-cache` so updates are picked up promptly.
+
+## 🌗 Theme
+
+The app follows `prefers-color-scheme` until you pick a theme with the toggle (`src/shell/`); the choice is
+saved in `localStorage` (`color-theme`) and applied before first paint. Dark-mode colours are CSS variables in
+`src/theme.css`, wired into Tailwind by `tailwind.theme.js`, so the light design keeps Tailwind's stock colours.
 
 ## 🚀 Deployment
 

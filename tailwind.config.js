@@ -1,5 +1,8 @@
+import themePreset from './tailwind.theme.js'
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  presets: [themePreset],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
