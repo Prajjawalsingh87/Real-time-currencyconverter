@@ -5,7 +5,7 @@ export function CurrencyBadge({ code, size = "md" }) {
   const flag = flagOf(code)
   const box = size === "sm" ? "h-7 w-7 text-base" : "h-9 w-9 text-xl"
   const initials = size === "sm" ? "text-[8px]" : "text-[10px]"
-  if (flag) return <span className={`${box} grid place-items-center rounded-full bg-white/10 leading-none`}>{flag}</span>
+  if (flag) return <span className={`${box} grid place-items-center rounded-full bg-indigo-50 leading-none`}>{flag}</span>
   return (
     <span className={`${box} grid place-items-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 ${initials} font-bold tracking-tight text-slate-900`}>
       {code.slice(0, 3).toUpperCase()}
@@ -54,13 +54,13 @@ function CurrencySelect({ value, onChange, options = [], names = {}, label }) {
       <button
         type="button"
         onClick={() => pick(code)}
-        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/10 ${
+        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-indigo-50 ${
           code === value ? "bg-indigo-500/20 ring-1 ring-indigo-400/40" : ""
         }`}
       >
         <CurrencyBadge code={code} size="sm" />
-        <span className="w-12 font-semibold text-white">{code.toUpperCase()}</span>
-        <span className="truncate text-sm text-slate-400">{names[code] || ""}</span>
+        <span className="w-12 font-semibold text-slate-900">{code.toUpperCase()}</span>
+        <span className="truncate text-sm text-slate-600">{names[code] || ""}</span>
       </button>
     </li>
   )
@@ -72,24 +72,24 @@ function CurrencySelect({ value, onChange, options = [], names = {}, label }) {
         aria-label={label}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 py-1.5 pl-1.5 pr-3 transition hover:border-white/20 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-100 py-1.5 pl-1.5 pr-3 transition hover:border-slate-300 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
       >
         <CurrencyBadge code={value} />
-        <span className="text-lg font-semibold tracking-wide text-white">{value.toUpperCase()}</span>
-        <svg className={`h-4 w-4 text-slate-400 transition ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+        <span className="text-lg font-semibold tracking-wide text-slate-900">{value.toUpperCase()}</span>
+        <svg className={`h-4 w-4 text-slate-600 transition ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
         </svg>
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/95 shadow-2xl shadow-black/50 backdrop-blur-xl">
-          <div className="border-b border-white/10 p-3">
+        <div className="absolute right-0 z-30 mt-2 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl shadow-black/50 backdrop-blur-xl">
+          <div className="border-b border-slate-200 p-3">
             <input
               ref={searchRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search currency or country…"
-              className="w-full rounded-xl bg-white/5 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none ring-1 ring-white/10 focus:ring-indigo-400"
+              className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-900 placeholder-slate-500 outline-none ring-1 ring-white/10 focus:ring-indigo-400"
             />
           </div>
           <ul className="max-h-80 overflow-y-auto p-2">

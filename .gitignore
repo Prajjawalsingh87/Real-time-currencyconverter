@@ -2,3 +2,7 @@ node_modules/
 dist/
 .vercel
 .env*
+
+.vercel/
+
+.code-review-graph/

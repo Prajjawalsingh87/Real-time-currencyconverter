@@ -14,7 +14,7 @@ Convert between **200+ currencies, crypto and metals** with live exchange rates.
 - **Popular rates panel**: your amount in 11 common currencies; click one to convert to it
 - **Copy result** to the clipboard
 - Loading and error states, and a backup rate source if the main one is down
-- Responsive dark UI for phones and desktops
+- Responsive light UI for phones and desktops
 
 ## 🛠 Tech Stack
 
@@ -47,3 +47,29 @@ src/
 ## 🚀 Deployment
 
 Deployed on **Vercel**; every push to `main` deploys to production.
+
+
+## October 2026 improvements
+
+Save up to six currency pairs on this device and reopen them with one click. Switching the base currency clears old rates while the new rates load. Exchange API rates update daily, not tick-by-tick.
+
+
+## Terminal verification and deployment
+
+```bash
+npm ci
+npm run lint
+npm run build
+npm run dev
+```
+
+Node.js 24 is used on Vercel. The production build is written to `dist/`.
+
+```bash
+vercel link --project real-time-currencyconverter
+vercel deploy          # preview
+vercel deploy --prod   # publish production
+```
+
+The local `.vercel/` link is ignored by Git. Deployment credentials belong in
+the CLI's login session, never in this repository.

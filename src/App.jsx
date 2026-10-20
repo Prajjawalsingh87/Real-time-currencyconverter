@@ -12,6 +12,16 @@ function App() {
   const [to, setTo] = useState("inr")
   const [spin, setSpin] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [savedPairs, setSavedPairs] = useState(() => {
+    try { const saved = JSON.parse(localStorage.getItem("fx:pairs")); return Array.isArray(saved) ? saved.filter(p => p && /^[a-z0-9]{2,12}$/.test(p.from) && /^[a-z0-9]{2,12}$/.test(p.to)).slice(0, 6) : [] } catch { return [] }
+  })
+  const [pairMessage, setPairMessage] = useState("")
+  const savePair = () => {
+    const next = [{ from, to }, ...savedPairs.filter(p => p.from !== from || p.to !== to)].slice(0, 6)
+    setSavedPairs(next)
+    try { localStorage.setItem("fx:pairs", JSON.stringify(next)); setPairMessage("Pair saved on this device.") }
+    catch { setPairMessage("Pair saved for this session only; browser storage is unavailable.") }
+  }
 
   const { rates, date, loading, error } = useCurrencyInfo(from)
   const names = useCurrencyNames()
@@ -42,10 +52,10 @@ function App() {
   const popular = POPULAR.filter((c) => c !== from && rates[c])
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-950 font-sans text-slate-200 antialiased">
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 font-sans text-slate-700 antialiased">
       {/* soft background glow */}
       <div className="pointer-events-none absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-indigo-600/25 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-48 -right-32 h-[34rem] w-[34rem] rounded-full bg-emerald-500/15 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-48 -right-32 h-[34rem] w-[34rem] rounded-full bg-indigo-600/15 blur-3xl" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:24px_24px]" />
 
       <div className="relative mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-6">
@@ -53,31 +63,31 @@ function App() {
         <header className="flex items-center justify-between py-6">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-400 shadow-lg shadow-indigo-500/30">
-              <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="h-5 w-5 text-slate-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M7 7h11l-3-3M17 17H6l3 3" />
               </svg>
             </div>
             <div>
-              <p className="text-lg font-bold leading-tight text-white">FX Live</p>
-              <p className="text-xs text-slate-500">Real-time currency converter</p>
+              <p className="text-lg font-bold leading-tight text-slate-900">FX Live</p>
+              <p className="text-xs text-slate-500">Daily exchange rates</p>
             </div>
           </div>
-          <span className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+          <span className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-700">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
             </span>
-            {date ? `Rates of ${formatDate(date)}` : "Live rates"}
+            {date ? `Rates of ${formatDate(date)}` : "Loading rates"}
           </span>
         </header>
 
         <main className="grid flex-1 grid-cols-1 items-start gap-6 pb-10 pt-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:pt-10">
           {/* converter */}
-          <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Convert <span className="bg-gradient-to-r from-indigo-300 to-emerald-300 bg-clip-text text-transparent">any currency</span>, instantly
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-200/60 backdrop-blur-xl sm:p-8">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Convert <span className="bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">any currency</span>, instantly
             </h1>
-            <p className="mt-1 text-sm text-slate-400">200+ currencies, including crypto and metals. Results update as you type.</p>
+            <p className="mt-1 text-sm text-slate-600">200+ currencies, including crypto and metals. Results update as you type.</p>
 
             <div className="mt-6">
               <InputBox
@@ -95,7 +105,7 @@ function App() {
                   type="button"
                   onClick={swap}
                   aria-label="Swap currencies"
-                  className="grid h-12 w-12 place-items-center rounded-full border-4 border-slate-900 bg-gradient-to-br from-indigo-500 to-emerald-500 text-white shadow-lg shadow-indigo-500/30 transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                  className="grid h-12 w-12 place-items-center rounded-full border-4 border-slate-900 bg-gradient-to-br from-indigo-500 to-emerald-500 text-slate-900 shadow-lg shadow-indigo-500/30 transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
                 >
                   <svg
                     className="h-5 w-5 transition-transform duration-500"
@@ -119,6 +129,11 @@ function App() {
               />
             </div>
 
+            <div className="studio-toolbar">
+              <button className="studio-button" onClick={savePair}>Save pair</button>
+              {savedPairs.map(p => <button className="studio-button" key={`${p.from}-${p.to}`} onClick={() => { setFrom(p.from); setTo(p.to); }}>{p.from.toUpperCase()} → {p.to.toUpperCase()}</button>)}
+            </div>
+            <p className="studio-note" role="status">{pairMessage}</p>
             {/* quick amounts */}
             <div className="mt-5 flex flex-wrap gap-2">
               {QUICK_AMOUNTS.map((q) => (
@@ -128,8 +143,8 @@ function App() {
                   onClick={() => setAmount(q)}
                   className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${
                     amount === q
-                      ? "border-indigo-400/60 bg-indigo-500/20 text-indigo-200"
-                      : "border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white/10"
+                      ? "border-indigo-400/60 bg-indigo-500/20 text-indigo-700"
+                      : "border-slate-200 bg-slate-100 text-slate-700 hover:border-slate-300 hover:bg-indigo-50"
                   }`}
                 >
                   {formatAmount(Number(q))}
@@ -138,20 +153,20 @@ function App() {
             </div>
 
             {/* result summary */}
-            <div className="mt-6 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/10 to-emerald-500/10 p-5">
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-500/10 to-emerald-500/10 p-5">
               {error ? (
-                <p className="text-sm text-rose-300">{error}</p>
+                <p className="text-sm text-rose-700">{error}</p>
               ) : (
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-slate-600">
                       {formatAmount(value)} {from.toUpperCase()} =
                     </p>
-                    <p className="mt-1 break-all text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                      {rate ? convertedText : "—"} <span className="text-xl font-semibold text-emerald-300">{to.toUpperCase()}</span>
+                    <p className="mt-1 break-all text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                      {rate ? convertedText : "—"} <span className="text-xl font-semibold text-indigo-700">{to.toUpperCase()}</span>
                     </p>
                     {rate && (
-                      <p className="mt-2 text-sm text-slate-400">
+                      <p className="mt-2 text-sm text-slate-600">
                         1 {from.toUpperCase()} = {formatAmount(rate)} {to.toUpperCase()}
                         <span className="mx-2 text-slate-600">·</span>
                         1 {to.toUpperCase()} = {formatAmount(1 / rate)} {from.toUpperCase()}
@@ -162,11 +177,11 @@ function App() {
                     type="button"
                     onClick={copy}
                     disabled={!rate}
-                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10 disabled:opacity-40"
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-indigo-50 disabled:opacity-40"
                   >
                     {copied ? (
                       <>
-                        <svg className="h-4 w-4 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 13l4 4L19 7" /></svg>
+                        <svg className="h-4 w-4 text-indigo-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 13l4 4L19 7" /></svg>
                         Copied
                       </>
                     ) : (
@@ -182,29 +197,29 @@ function App() {
           </section>
 
           {/* popular rates */}
-          <aside className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-6">
+          <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-200/60 backdrop-blur-xl sm:p-6">
             <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="font-semibold text-white">Popular rates</h2>
+              <h2 className="font-semibold text-slate-900">Popular rates</h2>
               <span className="text-xs text-slate-500">for {formatAmount(value)} {from.toUpperCase()}</span>
             </div>
             <ul className="space-y-1">
               {loading && popular.length === 0
-                ? Array.from({ length: 8 }, (_, i) => <li key={i} className="h-12 animate-pulse rounded-xl bg-white/5" />)
+                ? Array.from({ length: 8 }, (_, i) => <li key={i} className="h-12 animate-pulse rounded-xl bg-slate-100" />)
                 : popular.map((c) => (
                     <li key={c}>
                       <button
                         type="button"
                         onClick={() => setTo(c)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5 ${
-                          c === to ? "bg-white/5 ring-1 ring-indigo-400/40" : ""
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-100 ${
+                          c === to ? "bg-slate-100 ring-1 ring-indigo-400/40" : ""
                         }`}
                       >
                         <CurrencyBadge code={c} size="sm" />
                         <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-white">{c.toUpperCase()}</span>
+                          <span className="block text-sm font-semibold text-slate-900">{c.toUpperCase()}</span>
                           <span className="block truncate text-xs text-slate-500">{names[c] || ""}</span>
                         </span>
-                        <span className="text-right text-sm font-medium tabular-nums text-slate-200">
+                        <span className="text-right text-sm font-medium tabular-nums text-slate-700">
                           {formatAmount(value * rates[c])}
                         </span>
                       </button>
@@ -216,7 +231,7 @@ function App() {
 
         <footer className="pb-6 text-center text-xs text-slate-600">
           Rates from the free{" "}
-          <a className="text-slate-400 underline-offset-2 hover:underline" href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noreferrer">
+          <a className="text-slate-600 underline-offset-2 hover:underline" href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noreferrer">
             Exchange API
           </a>
           , updated daily. For reference only.
