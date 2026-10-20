@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { InputBox, CurrencyBadge } from './components'
 import useCurrencyInfo from './hooks/UseCurrencyInfo'
 import useCurrencyNames from './hooks/useCurrencyNames'
+import useOnlineStatus from './hooks/useOnlineStatus'
 import RateHistory from './components/RateHistory'
 import RateAlerts from './components/RateAlerts'
 import CommandPalette from './components/CommandPalette'
@@ -44,6 +45,7 @@ function App() {
 
   const { rates, date, loading, error } = useCurrencyInfo(from)
   const names = useCurrencyNames()
+  const online = useOnlineStatus()
   const options = useMemo(() => Object.keys(rates), [rates])
 
   const rate = rates[to]
@@ -184,10 +186,17 @@ function App() {
               ))}
             </div>
 
+            {!online && date && !error && (
+              <p className="mt-5 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M2 8.8a15 15 0 0120 0M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0M12 19.5h.01M3 3l18 18" /></svg>
+                Offline — showing saved rates from {formatDate(date)}.
+              </p>
+            )}
+
             {/* result summary */}
             <div className="mt-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-indigo-500/10 to-emerald-500/10 p-5">
               {error ? (
-                <p className="text-sm text-rose-700">{error}</p>
+                <p className="text-sm text-rose-700" role="alert">{online ? error : "You're offline and no saved rates are available for this currency yet."}</p>
               ) : (
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div className="min-w-0">
@@ -255,7 +264,7 @@ function App() {
                         <CurrencyBadge code={c} size="sm" />
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold text-slate-900">{c.toUpperCase()}</span>
-                          <span className="block truncate text-xs text-slate-500">{names[c] || ""}</span>
+                          <span className="block truncate text-xs text-slate-600">{names[c] || ""}</span>
                         </span>
                         <span className="text-right text-sm font-medium tabular-nums text-slate-700">
                           {formatAmount(value * rates[c])}

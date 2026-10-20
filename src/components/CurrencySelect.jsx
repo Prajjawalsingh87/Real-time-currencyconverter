@@ -69,7 +69,7 @@ function CurrencySelect({ value, onChange, options = [], names = {}, label }) {
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        aria-label={label}
+        aria-label={`${value.toUpperCase()}, ${label}`}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-100 py-1.5 pl-1.5 pr-3 transition hover:border-slate-300 hover:bg-indigo-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"

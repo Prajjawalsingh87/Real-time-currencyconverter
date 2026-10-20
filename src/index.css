@@ -4,14 +4,13 @@
 
 @layer base {
   html {
-    color-scheme: light;
-    background: #f6f7fb;
+    background: rgb(var(--slate-50));
   }
   ::selection {
     background: rgba(99, 102, 241, 0.4);
   }
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    scrollbar-color: rgb(var(--slate-400) / 0.5) transparent;
   }
 }
