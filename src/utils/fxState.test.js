@@ -105,6 +105,7 @@ describe("compare list operations", () => {
     expect(moveCode(list, "gbp", -1)).toEqual(["gbp", "eur"])
     expect(moveCode(list, "eur", -1)).toBe(list)
     expect(removeCode(list, "eur")).toEqual(["gbp"])
+    expect(removeCode(list, "zzz")).toBe(list)
   })
 
   it("respects the maximum size", () => {

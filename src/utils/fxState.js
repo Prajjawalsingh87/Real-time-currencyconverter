@@ -101,8 +101,10 @@ export function addCode(list, code, max = MAX_COMPARE) {
   return [...list, c]
 }
 
+// Returns the same array when `code` is absent, so React skips the update and the
+// saved list is not rewritten by unrelated currency changes.
 export function removeCode(list, code) {
-  return list.filter((c) => c !== code)
+  return list.includes(code) ? list.filter((c) => c !== code) : list
 }
 
 // Moves `code` by `delta` places (-1 up, +1 down); out-of-range moves are no-ops.

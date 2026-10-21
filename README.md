@@ -119,7 +119,7 @@ Deployed on **Vercel**; every push to `main` deploys to production.
 
 ## October 2026 improvements
 
-Save up to six currency pairs on this device and reopen them with one click. Switching the base currency clears old rates while the new rates load. Exchange API rates update daily, not tick-by-tick.
+Star up to eight favourite currency pairs on this device and reopen them with one click. Switching the base currency clears old rates while the new rates load. Exchange API rates update daily, not tick-by-tick.
 
 
 ## Terminal verification and deployment
