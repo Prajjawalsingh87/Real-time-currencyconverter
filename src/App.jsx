@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { InputBox, CurrencyBadge } from './components'
 import useCurrencyInfo from './hooks/UseCurrencyInfo'
 import useCurrencyNames from './hooks/useCurrencyNames'
@@ -6,20 +6,43 @@ import useOnlineStatus from './hooks/useOnlineStatus'
 import RateHistory from './components/RateHistory'
 import RateAlerts from './components/RateAlerts'
 import CommandPalette from './components/CommandPalette'
+import ComparePanel from './components/ComparePanel'
 import { POPULAR, formatAmount, formatDate } from './utils/currency'
+import {
+  MAX_COMPARE, addCode, buildShareQuery, cleanPairs, isFavourite, moveCode, removeCode,
+  resolveInitialState, toggleFavourite,
+} from './utils/fxState'
+
+const PAIRS_KEY = "fx:pairs"
+const COMPARE_KEY = "fx:compare"
+
+function readJson(key) {
+  try { return JSON.parse(localStorage.getItem(key)) } catch { return null }
+}
+
+function writeJson(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true } catch { return false }
+}
+
+// URL (?amt=&from=&to=) first, then the compare list saved on this device.
+const initial = resolveInitialState(
+  typeof window === "undefined" ? "" : window.location.search,
+  { compare: readJson(COMPARE_KEY) }
+)
 
 const QUICK_AMOUNTS = ["1", "10", "100", "1000", "10000"]
 
 function App() {
-  const [amount, setAmount] = useState("100")
-  const [from, setFrom] = useState("usd")
-  const [to, setTo] = useState("inr")
+  const [amount, setAmount] = useState(initial.amount)
+  const [from, setFrom] = useState(initial.from)
+  const [to, setTo] = useState(initial.to)
+  const [compare, setCompare] = useState(initial.compare)
   const [spin, setSpin] = useState(0)
   const [copied, setCopied] = useState(false)
-  const [savedPairs, setSavedPairs] = useState(() => {
-    try { const saved = JSON.parse(localStorage.getItem("fx:pairs")); return Array.isArray(saved) ? saved.filter(p => p && /^[a-z0-9]{2,12}$/.test(p.from) && /^[a-z0-9]{2,12}$/.test(p.to)).slice(0, 6) : [] } catch { return [] }
-  })
+  const [linkStatus, setLinkStatus] = useState("")
+  const [favourites, setFavourites] = useState(() => cleanPairs(readJson(PAIRS_KEY)))
   const [pairMessage, setPairMessage] = useState("")
+  const [compareMessage, setCompareMessage] = useState("")
   // ?q=yen opens the currency search pre-filled (shareable search links)
   const [initialQuery] = useState(() => {
     try { return (new URLSearchParams(window.location.search).get("q") || "").slice(0, 60) } catch { return "" }
@@ -36,11 +59,57 @@ function App() {
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [])
-  const savePair = () => {
-    const next = [{ from, to }, ...savedPairs.filter(p => p.from !== from || p.to !== to)].slice(0, 6)
-    setSavedPairs(next)
-    try { localStorage.setItem("fx:pairs", JSON.stringify(next)); setPairMessage("Pair saved on this device.") }
-    catch { setPairMessage("Pair saved for this session only; browser storage is unavailable.") }
+
+  // Keep the address bar in sync so copying the URL reproduces this view.
+  const shareQuery = buildShareQuery({ amount, from, to, compare })
+  useEffect(() => {
+    try {
+      const url = `${window.location.pathname}${shareQuery}${window.location.hash}`
+      if (url !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+        window.history.replaceState(window.history.state, "", url)
+      }
+    } catch {
+      /* sandboxed frames can block history updates */
+    }
+  }, [shareQuery])
+
+  const favourite = isFavourite(favourites, from, to)
+  const toggleFav = () => {
+    const next = toggleFavourite(favourites, from, to)
+    setFavourites(next)
+    const pair = `${from.toUpperCase()} → ${to.toUpperCase()}`
+    const stored = writeJson(PAIRS_KEY, next)
+    setPairMessage(
+      !stored ? "Saved for this session only; browser storage is unavailable."
+        : favourite ? `${pair} removed from favourites.`
+        : next.length < favourites.length + 1 ? `${pair} added; the oldest favourite was replaced.`
+        : `${pair} added to favourites.`
+    )
+  }
+  const switchPair = (p) => {
+    setFrom(p.from)
+    setTo(p.to)
+    setCompare((list) => removeCode(removeCode(list, p.from), p.to))
+  }
+
+  // Save the compare list whenever it changes, but not on first load, so opening
+  // a shared link does not overwrite the list saved on this device until you edit it.
+  const compareLoaded = useRef(false)
+  useEffect(() => {
+    if (!compareLoaded.current) { compareLoaded.current = true; return }
+    if (!writeJson(COMPARE_KEY, compare)) setCompareMessage("Saved for this session only; browser storage is unavailable.")
+  }, [compare])
+  const updateCompare = (next, note) => {
+    setCompare(next)
+    setCompareMessage(note)
+  }
+  const changeFrom = (c) => { setFrom(c); if (c === to) setTo(from); setCompare((list) => removeCode(list, c)) }
+  const changeTo = (c) => { setTo(c); if (c === from) setFrom(to); setCompare((list) => removeCode(list, c)) }
+  // Clicking a compare row makes it the target; the old target takes its place in the list.
+  const pickCompared = (c) => {
+    const next = compare.map((x) => (x === c ? to : x))
+    setTo(c)
+    updateCompare(next, `Now converting to ${c.toUpperCase()}.`)
   }
 
   const { rates, date, loading, error } = useCurrencyInfo(from)
@@ -67,6 +136,29 @@ function App() {
       setTimeout(() => setCopied(false), 1500)
     } catch {
       /* clipboard blocked: nothing to do */
+    }
+  }
+
+  const shareUrl = () => `${window.location.origin}${window.location.pathname}${shareQuery}`
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl())
+      setLinkStatus("Link copied. Anyone opening it sees this conversion.")
+    } catch {
+      setLinkStatus("Couldn't copy automatically; copy the address bar instead.")
+    }
+  }
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function"
+  const share = async () => {
+    try {
+      await navigator.share({
+        title: "FX Live",
+        text: rate ? `${formatAmount(value)} ${from.toUpperCase()} = ${convertedText} ${to.toUpperCase()}` : "Currency conversion",
+        url: shareUrl(),
+      })
+      setLinkStatus("")
+    } catch (err) {
+      if (err?.name !== "AbortError") setLinkStatus("Sharing isn't available here; use Copy link instead.")
     }
   }
 
@@ -130,7 +222,7 @@ function App() {
                 onAmountChange={setAmount}
                 currencyOptions={options}
                 currencyNames={names}
-                onCurrencyChange={setFrom}
+                onCurrencyChange={changeFrom}
                 selectCurrency={from}
               />
 
@@ -156,16 +248,33 @@ function App() {
                 amount={convertedText}
                 currencyOptions={options}
                 currencyNames={names}
-                onCurrencyChange={setTo}
+                onCurrencyChange={changeTo}
                 selectCurrency={to}
                 amountDisable
                 loading={loading && !rate}
               />
             </div>
 
-            <div className="studio-toolbar">
-              <button className="studio-button" onClick={savePair}>Save pair</button>
-              {savedPairs.map(p => <button className="studio-button" key={`${p.from}-${p.to}`} onClick={() => { setFrom(p.from); setTo(p.to); }}>{p.from.toUpperCase()} → {p.to.toUpperCase()}</button>)}
+            <div className="studio-toolbar" role="group" aria-label="Favourite pairs">
+              <button type="button" className="studio-button" aria-pressed={favourite} onClick={toggleFav}>
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill={favourite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z" /></svg>
+                {favourite ? "Favourite" : "Add to favourites"}
+              </button>
+              {favourites.map((p) => {
+                const current = p.from === from && p.to === to
+                return (
+                  <button
+                    type="button"
+                    className={`studio-button studio-button-sm ${current ? "!border-indigo-400 !bg-indigo-50" : ""}`}
+                    key={`${p.from}-${p.to}`}
+                    aria-current={current ? "true" : undefined}
+                    aria-label={`Switch to ${p.from.toUpperCase()} to ${p.to.toUpperCase()}`}
+                    onClick={() => switchPair(p)}
+                  >
+                    {p.from.toUpperCase()} → {p.to.toUpperCase()}
+                  </button>
+                )
+              })}
             </div>
             <p className="studio-note" role="status">{pairMessage}</p>
             {/* quick amounts */}
@@ -214,6 +323,7 @@ function App() {
                       </p>
                     )}
                   </div>
+                  <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={copy}
@@ -232,10 +342,44 @@ function App() {
                       </>
                     )}
                   </button>
+                  <button
+                    type="button"
+                    onClick={copyLink}
+                    className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-indigo-50"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M10 14a4.5 4.5 0 006.4 0l3-3a4.5 4.5 0 00-6.4-6.4l-1 1M14 10a4.5 4.5 0 00-6.4 0l-3 3a4.5 4.5 0 006.4 6.4l1-1" /></svg>
+                    Copy link
+                  </button>
+                  {canShare && (
+                    <button
+                      type="button"
+                      onClick={share}
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-indigo-50"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3v13M7 8l5-5 5 5M5 14v5a2 2 0 002 2h10a2 2 0 002-2v-5" /></svg>
+                      Share
+                    </button>
+                  )}
+                  </div>
                 </div>
               )}
+              <p className="mt-2 text-xs text-slate-600" role="status">{linkStatus}</p>
             </div>
           </section>
+
+          <ComparePanel
+            amount={amount}
+            from={from}
+            to={to}
+            rates={rates}
+            names={names}
+            codes={compare}
+            message={compareMessage}
+            onAdd={(c) => updateCompare(addCode(compare, c, MAX_COMPARE), `${c.toUpperCase()} added.`)}
+            onRemove={(c) => updateCompare(removeCode(compare, c), `${c.toUpperCase()} removed.`)}
+            onMove={(c, d) => updateCompare(moveCode(compare, c, d), `${c.toUpperCase()} moved ${d < 0 ? "up" : "down"}.`)}
+            onPick={pickCompared}
+          />
 
           {rate && date ? (
             <RateHistory from={from} to={to} date={date} rate={rate} />
@@ -256,7 +400,7 @@ function App() {
                     <li key={c}>
                       <button
                         type="button"
-                        onClick={() => setTo(c)}
+                        onClick={() => changeTo(c)}
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-100 ${
                           c === to ? "bg-slate-100 ring-1 ring-indigo-400/40" : ""
                         }`}
@@ -282,8 +426,8 @@ function App() {
           codes={options}
           names={names}
           initialQuery={initialQuery}
-          onPickTo={(c) => { if (c === from) setFrom(to); setTo(c) }}
-          onPickFrom={(c) => { if (c === to) setTo(from); setFrom(c) }}
+          onPickTo={changeTo}
+          onPickFrom={changeFrom}
         />
 
         <footer className="pb-6 text-center text-xs text-slate-600">

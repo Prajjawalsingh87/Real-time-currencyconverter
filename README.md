@@ -13,7 +13,10 @@ Convert between **200+ currencies, crypto and metals** with live exchange rates.
 - **Rate in both directions** (e.g. `1 USD = 95.03 INR · 1 INR = 0.01052 USD`) plus the date of the rates
 - **Popular rates panel**: your amount in 11 common currencies; click one to convert to it
 - **Copy result** to the clipboard
-- **Rate history chart** for the selected pair: 7 / 30 / 90 days with low, high and change %, drawn as a lightweight inline SVG (no chart library), with a screen-reader summary and data table
+- **Compare many currencies**: convert one amount into your own list of up to 12 currencies at once, each row with its rate and value; add, remove and reorder rows, and tap a row to make it the target. The list is saved on this device
+- **Shareable links**: the address bar always reflects the view (`?amt=100&from=USD&to=INR,EUR`), so copying the URL reproduces it; **Copy link** button, plus **Share** via the native share sheet where the browser supports it
+- **Favourite pairs**: star the current pair and switch between up to 8 favourites with one tap
+- **Rate history chart** for the selected pair: 7 / 30 / 90 days or 1 year with low, high and change %, drawn as a lightweight inline SVG (no chart library), with a screen-reader summary and data table
 - **Global currency search** (`Ctrl+K` / `⌘K`): typo-tolerant search across codes, names and countries ("brazl", "ivory coast", "swiss"), powered by [MiniSearch](https://github.com/lucaong/minisearch). `Enter` converts to the currency, `Alt+Enter` converts from it; `?q=yen` opens the search pre-filled
 - **Rate alerts**: "tell me when USD → INR goes above 95", saved on this device and checked against the latest rates whenever the app opens
 - Loading and error states, and a backup rate source if the main one is down
@@ -43,7 +46,8 @@ src/
 ├── components/
 │   ├── InputBox.jsx            # amount + currency field
 │   ├── CurrencySelect.jsx      # searchable currency picker, flag badges
-│   ├── RateHistory.jsx         # 7/30/90-day SVG line chart
+│   ├── ComparePanel.jsx        # one amount in many currencies
+│   ├── RateHistory.jsx         # 7D/30D/90D/1Y SVG line chart
 │   ├── CommandPalette.jsx      # Ctrl+K MiniSearch currency search
 │   └── RateAlerts.jsx          # local above/below rate alerts
 ├── hooks/
@@ -52,6 +56,7 @@ src/
 │   └── useCurrencyNames.js     # full currency names
 └── utils/
     ├── currency.js             # flags, number and date formatting
+    ├── fxState.js              # URL query, compare list, favourites, conversion (pure)
     └── countries.js            # countries/aliases per currency for search
 ```
 
@@ -59,9 +64,38 @@ src/
 
 The Exchange API publishes a dated snapshot per day (`@fawazahmed0/currency-api@YYYY-MM-DD`, with
 `YYYY-MM-DD.currency-api.pages.dev` as fallback). To keep requests low the chart samples points:
-daily for 7 days (7 requests), every 3 days for 30 days (10) and weekly for 90 days (13), plus today's
-live rate. Each day's rate is cached in `sessionStorage`; when a snapshot is missing the app tries up
+daily for 7 days (7 requests), every 3 days for 30 days (10), weekly for 90 days (13) and every two
+weeks for a year (27), plus today's live rate. The API has no time-series endpoint, so the chart is built
+from these per-date calls. Each day's rate is cached in `sessionStorage`; when a snapshot is missing the app tries up
 to two earlier days and otherwise leaves the gap out of the line.
+
+## 🔗 Shareable links
+
+| Parameter | Example | Meaning |
+|-----------|---------|---------|
+| `amt`  | `amt=100` | amount to convert |
+| `from` | `from=USD` | base currency |
+| `to`   | `to=INR,EUR,GBP` | first code is the converter's target; the rest form the compare list |
+| `cmp`  | `cmp=JPY` | optional extra compare codes (accepted when reading) |
+| `q`    | `q=yen` | opens the currency search pre-filled |
+
+The app rewrites the query with `history.replaceState` as you change things, so the address bar is always a
+working link. Invalid codes and amounts are ignored. A link with only one `to` code keeps the visitor's own
+saved compare list; opening a link never overwrites the list saved on the device until it is edited.
+
+## ⭐ Compare list & favourites
+
+The compare list (`fx:compare`) and favourite pairs (`fx:pairs`, which also keeps pairs saved by earlier
+versions) live in `localStorage`. Compare rows use the rates already loaded for the base currency, so they
+work offline with the saved rates too.
+
+## 🧪 Tests
+
+```bash
+npm test           # vitest: URL state, conversion, compare list, favourites, history sampling
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs lint, tests and the build on every pull request.
 
 ## 📲 Install & offline (PWA)
 
@@ -85,7 +119,7 @@ Deployed on **Vercel**; every push to `main` deploys to production.
 
 ## October 2026 improvements
 
-Save up to six currency pairs on this device and reopen them with one click. Switching the base currency clears old rates while the new rates load. Exchange API rates update daily, not tick-by-tick.
+Star up to eight favourite currency pairs on this device and reopen them with one click. Switching the base currency clears old rates while the new rates load. Exchange API rates update daily, not tick-by-tick.
 
 
 ## Terminal verification and deployment
@@ -93,6 +127,7 @@ Save up to six currency pairs on this device and reopen them with one click. Swi
 ```bash
 npm ci
 npm run lint
+npm test
 npm run build
 npm run dev
 ```
