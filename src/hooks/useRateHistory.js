@@ -7,11 +7,13 @@ const DATED_SOURCES = [
 ]
 
 // Days covered by each range and the spacing between sampled points, so that
-// 90 days costs ~14 requests instead of 90.
+// 90 days costs ~13 requests instead of 90 and a year ~27 instead of 365.
+// The API has no time-series endpoint, only one snapshot per date.
 export const RANGES = {
-  "7D": { days: 7, step: 1 },
-  "30D": { days: 30, step: 3 },
-  "90D": { days: 90, step: 7 },
+  "7D": { days: 7, step: 1, note: "" },
+  "30D": { days: 30, step: 3, note: ", every 3 days" },
+  "90D": { days: 90, step: 7, note: ", sampled weekly" },
+  "1Y": { days: 365, step: 14, note: ", sampled every 2 weeks" },
 }
 
 const MAX_BACKFILL = 2 // when a day has no snapshot, try up to 2 earlier days

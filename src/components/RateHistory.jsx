@@ -6,11 +6,11 @@ const W = 600
 const H = 170
 const PAD = { top: 12, right: 6, bottom: 4, left: 6 }
 
-function shortDate(iso) {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+function shortDate(iso, withYear) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", withYear ? { month: "short", year: "numeric" } : { day: "numeric", month: "short" })
 }
 
-// Small dependency-free line chart of the selected pair over 7/30/90 days.
+// Small dependency-free line chart of the selected pair over 7/30/90 days or a year.
 function RateHistory({ from, to, date, rate }) {
   const [range, setRange] = useState("30D")
   const [hover, setHover] = useState(null)
@@ -59,7 +59,7 @@ function RateHistory({ from, to, date, rate }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id={titleId} className="font-semibold text-slate-900">Rate history · {pair}</h2>
-          <p className="text-xs text-slate-500">Daily snapshots{range === "90D" ? ", sampled weekly" : range === "30D" ? ", every 3 days" : ""}</p>
+          <p className="text-xs text-slate-500">Daily snapshots{RANGES[range].note}</p>
         </div>
         <div role="group" aria-label="History range" className="flex gap-1 rounded-full bg-slate-100 p-1">
           {Object.keys(RANGES).map((k) => (
@@ -126,8 +126,8 @@ function RateHistory({ from, to, date, rate }) {
               )}
             </svg>
             <div className="flex justify-between text-[11px] text-slate-500" aria-hidden="true">
-              <span>{shortDate(chart.coords[0].date)}</span>
-              <span>{shortDate(chart.coords[chart.coords.length - 1].date)}</span>
+              <span>{shortDate(chart.coords[0].date, range === "1Y")}</span>
+              <span>{shortDate(chart.coords[chart.coords.length - 1].date, range === "1Y")}</span>
             </div>
             <p className="mt-1 h-5 text-xs text-slate-600" aria-live="polite">
               {active ? `${formatDate(active.date)}: 1 ${from.toUpperCase()} = ${formatAmount(active.rate)} ${to.toUpperCase()}` : `${points.length} data points · hover the chart for daily values`}
